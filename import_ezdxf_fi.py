@@ -1,4 +1,4 @@
-import ezdxf
+﻿import ezdxf
 import math
 import os
 SPACING_TEXT_TEMPLATE = "new"
@@ -314,7 +314,7 @@ def collect_nearest_behind_hits(beam_p1, beam_p2, msp, line_filter,
         for h in hits:
             print(f"      HIT {label} {h['side']}: dist={h['dist']:.1f}mm, "
                   f"line_len={h['line_length']:.1f}mm")
-        print(f"      Returning {len(hits)} {label} hit(s) – all distinct segments")
+        print(f"      Returning {len(hits)} {label} hit(s) â€“ all distinct segments")
 
     return hits
 
@@ -342,9 +342,9 @@ def get_perpendicular_start_and_direction(beam_p1, beam_p2, behind_hit, debug=Fa
             return None, None
         start = ((overlap_min + overlap_max) / 2, my)
         if debug:
-            print(f"         Beam X: {beam_min:.1f}–{beam_max:.1f}  "
-                  f"Behind X: {behind_min:.1f}–{behind_max:.1f}  "
-                  f"Overlap X: {overlap_min:.1f}–{overlap_max:.1f}  "
+            print(f"         Beam X: {beam_min:.1f}â€“{beam_max:.1f}  "
+                  f"Behind X: {behind_min:.1f}â€“{behind_max:.1f}  "
+                  f"Overlap X: {overlap_min:.1f}â€“{overlap_max:.1f}  "
                   f"Start X: {start[0]:.1f}")
     else:
         perp_dir = (-1, 0) if behind_side == "RIGHT" else (1, 0)
@@ -358,9 +358,9 @@ def get_perpendicular_start_and_direction(beam_p1, beam_p2, behind_hit, debug=Fa
             return None, None
         start = (mx, (overlap_min + overlap_max) / 2)
         if debug:
-            print(f"         Beam Y: {beam_min:.1f}–{beam_max:.1f}  "
-                  f"Behind Y: {behind_min:.1f}–{behind_max:.1f}  "
-                  f"Overlap Y: {overlap_min:.1f}–{overlap_max:.1f}  "
+            print(f"         Beam Y: {beam_min:.1f}â€“{beam_max:.1f}  "
+                  f"Behind Y: {behind_min:.1f}â€“{behind_max:.1f}  "
+                  f"Overlap Y: {overlap_min:.1f}â€“{overlap_max:.1f}  "
                   f"Start Y: {start[1]:.1f}")
 
     return start, perp_dir
@@ -515,11 +515,6 @@ def draw_perpendicular_for_behind_hit(beam_p1, beam_p2, beams, beam_idx, msp,
     dim_perp.update({"dimclrt": 3})
     dim_perp.render()
 
-    add_beam_spacing_text(
-        beams, beam_idx, beam_p1, beam_p2, perp_dir, start, msp,
-        perpendicular_length=perp_length,
-        perpendicular_ratio=0.2,
-    )
 
     return 1
 
@@ -683,11 +678,6 @@ def generate_hidden_perpendiculars_like_find_hidden(beam_p1, beam_p2, beams,
         dim_perp.update({"dimclrt": 3})
         dim_perp.render()
 
-        add_beam_spacing_text(
-            beams, beam_idx, beam_p1, beam_p2, perp_dir, start, msp,
-            perpendicular_length=perp_length,
-            perpendicular_ratio=0.3,
-        )
 
         count += 1
         if debug:
@@ -1044,7 +1034,7 @@ def generate_perpendiculars(beams, msp):
 
         else:
             without_behind_count += 1
-            print(f"  No behind line found — using fallback")
+            print(f"  No behind line found â€” using fallback")
 
             nearest_dist, nearest_side, nearest_coords, is_outer = \
                 find_nearest_parallel_beam_with_direction(p1, p2, beams, beam_idx, debug=False)
@@ -1520,7 +1510,7 @@ def run_dxf_processing(doc, params):
             if walls_generated > 0:
                 perp_count += walls_generated
                 bylayer_count += 1
-                print(f"🎉 SUCCESS: Look at me updating! Processed Beam {beam_idx} with notation: {BAR_TEXT}")
+                print(f"ðŸŽ‰ SUCCESS: Look at me updating! Processed Beam {beam_idx} with notation: {BAR_TEXT}")
                 if show_debug:
                     print(f"   Generated {walls_generated} perpendicular(s) from WALLS")
 
@@ -1547,7 +1537,7 @@ def run_dxf_processing(doc, params):
                     print(f"   Generated {hidden_generated} perpendicular(s) from HIDDEN lines")
         else:
             if show_debug:
-                print(f"   No hidden lines found — trying legacy find_hidden_and_generate")
+                print(f"   No hidden lines found â€” trying legacy find_hidden_and_generate")
             legacy_generated = find_hidden_and_generate(p1, p2, beams, beam_idx, msp)
             if legacy_generated > 0:
                 perp_count += legacy_generated
