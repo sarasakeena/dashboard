@@ -1,7 +1,7 @@
 import ezdxf
 import math
 import os
-SPACING_TEXT_TEMPLATE = "T8@200C/C"
+SPACING_TEXT_TEMPLATE = "new"
 
 def update_globals(params):
     global TARGET_LAYER, GENERATED_LAYER, BEHIND_MIN_DISTANCE, BEHIND_MAX_DISTANCE, FRONT_MIN_DISTANCE
