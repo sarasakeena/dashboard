@@ -1520,6 +1520,7 @@ def run_dxf_processing(doc, params):
             if walls_generated > 0:
                 perp_count += walls_generated
                 bylayer_count += 1
+                print(f"🎉 SUCCESS: Look at me updating! Processed Beam {beam_idx} with notation: {BAR_TEXT}")
                 if show_debug:
                     print(f"   Generated {walls_generated} perpendicular(s) from WALLS")
 
