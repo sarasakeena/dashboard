@@ -1,8 +1,7 @@
 ﻿import ezdxf
 import math
 import os
-import tkinter as tk
-from tkinter import filedialog
+
 
 root = tk.Tk()
 root.withdraw()
@@ -1551,5 +1550,20 @@ print(f"  From HIDDEN lines:              {hidden_count} beams")
 print(f"  Skipped (no hits):              {len(beams) - bylayer_count - hidden_count} beams")
 print(f"{'='*60}")
 print(f"\nDONE! Saved to: {output_path}")
+
+# ... this is the very end of your file
+
+if __name__ == "__main__":
+    import tkinter as tk
+    from tkinter import filedialog
+
+    root = tk.Tk()
+    root.withdraw()
+
+    input_path = filedialog.askopenfilename(
+        title="Select Input DXF File",
+        filetypes=[("DXF Files", "*.dxf")]
+    )
+# ... the rest of the code stays the same
 
 
