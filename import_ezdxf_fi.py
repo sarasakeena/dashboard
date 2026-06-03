@@ -41,7 +41,7 @@ PERP_DIM_ARROW_SIZE = 2
 BAR_TEXT = "T8@200C/C"
 BAR_TEXT_HEIGHT = 50
 BAR_TEXT_OFFSET = 65
-BAR_TEXT_COLOR = 3
+BAR_TEXT_COLOR = 7
 WALL_SIZE_TOLERANCE_PERCENT = 0.50
 
 _spacing_text_drawn = set()
@@ -1178,9 +1178,9 @@ def setup_dimstyle(doc):
     dimstyle.dxf.dimse2 = 0
     dimstyle.dxf.dimexo = 2
     dimstyle.dxf.dimgap = 8
-    dimstyle.dxf.dimclrd = 1
-    dimstyle.dxf.dimclre = 1
-    dimstyle.dxf.dimclrt = 1
+    dimstyle.dxf.dimclrd = 7
+    dimstyle.dxf.dimclre = 7
+    dimstyle.dxf.dimclrt = 7
 
     if "PERP_DIM" not in doc.dimstyles:
         perp_dimstyle = doc.dimstyles.new("PERP_DIM")
