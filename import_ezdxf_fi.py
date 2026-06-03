@@ -1,30 +1,22 @@
-import ezdxf
+﻿import ezdxf
 import math
 import os
-SPACING_TEXT_TEMPLATE = "T8@200C/C"
+import tkinter as tk
+from tkinter import filedialog
 
-def update_globals(params):
-    global TARGET_LAYER, GENERATED_LAYER, BEHIND_MIN_DISTANCE, BEHIND_MAX_DISTANCE, FRONT_MIN_DISTANCE
-    global RATIO, PARALLEL_TOLERANCE, RAY_LENGTH, ENDPOINT_TOLERANCE, PERP_DIM_OFFSET
-    global PERP_DIM_TEXT_HEIGHT, PERP_DIM_ARROW_SIZE, WALL_SIZE_TOLERANCE_PERCENT, SPACING_TEXT_TEMPLATE
-    
-    TARGET_LAYER = params.get("TARGET_LAYER", TARGET_LAYER)
-    GENERATED_LAYER = params.get("GENERATED_LAYER", GENERATED_LAYER)
-    BEHIND_MIN_DISTANCE = params.get("BEHIND_MIN_DISTANCE", BEHIND_MIN_DISTANCE)
-    BEHIND_MAX_DISTANCE = params.get("BEHIND_MAX_DISTANCE", BEHIND_MAX_DISTANCE)
-    FRONT_MIN_DISTANCE = params.get("FRONT_MIN_DISTANCE", FRONT_MIN_DISTANCE)
-    RATIO = params.get("RATIO", RATIO)
-    PARALLEL_TOLERANCE = params.get("PARALLEL_TOLERANCE", PARALLEL_TOLERANCE)
-    RAY_LENGTH = params.get("RAY_LENGTH", RAY_LENGTH)
-    ENDPOINT_TOLERANCE = params.get("ENDPOINT_TOLERANCE", ENDPOINT_TOLERANCE)
-    PERP_DIM_OFFSET = params.get("PERP_DIM_OFFSET", PERP_DIM_OFFSET)
-    PERP_DIM_TEXT_HEIGHT = params.get("PERP_DIM_TEXT_HEIGHT", PERP_DIM_TEXT_HEIGHT)
-    PERP_DIM_ARROW_SIZE = params.get("PERP_DIM_ARROW_SIZE", PERP_DIM_ARROW_SIZE)
-    WALL_SIZE_TOLERANCE_PERCENT = params.get("WALL_SIZE_TOLERANCE_PERCENT", WALL_SIZE_TOLERANCE_PERCENT)
-    SPACING_TEXT_TEMPLATE = params.get("SPACING_TEXT_TEMPLATE", SPACING_TEXT_TEMPLATE)
-    
-    _spacing_text_drawn.clear()
+root = tk.Tk()
+root.withdraw()
 
+input_path = filedialog.askopenfilename(
+    title="Select Input DXF File",
+    filetypes=[("DXF Files", "*.dxf")]
+)
+if not input_path:
+    print("No file selected. Exiting.")
+    exit()
+
+base_name = os.path.splitext(input_path)[0]
+output_path = base_name + "_output.dxf"
 
 TARGET_LAYER = "RCC_BEAMS"
 GENERATED_LAYER = "GENERATED_PERP_LINES"
@@ -124,7 +116,9 @@ def fix_linetypes(doc):
             except:
                 pass
 
-
+doc = safe_read_dxf(input_path)
+fix_linetypes(doc)
+msp = doc.modelspace()
 
 def length(p1, p2):
     return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
@@ -1459,154 +1453,103 @@ def setup_dimstyle(doc):
     spacing_dimstyle.dxf.dimclrt = 3
 
     return dimstyle
-def run_dxf_processing(doc, params):
-    # Update configuration from streamlit params
-    update_globals(params)
-    
-    print("=" * 60)
-    print("DXF BEAM PERPENDICULAR GENERATOR (RUNNING)")
-    print("=" * 60)
-    
-    dimstyle = setup_dimstyle(doc)
-    msp = doc.modelspace()
-    beams = extract_beams(msp)
-    print(f"\nDetected {len(beams)} target beam segments on layer '{TARGET_LAYER}'")
+print("=" * 60)
+print("DXF BEAM PERPENDICULAR GENERATOR")
+print("=" * 60)
+print(f"Input file:  {input_path}")
+print(f"Output file: {output_path}")
+print("=" * 60)
 
-    if len(beams) == 0:
-        print("No beams found! Check layer name and linetype (DASH/HIDDEN).")
-        return doc, {
-            "total_beams": 0,
-            "total_perps": 0,
-            "bylayer_count": 0,
-            "hidden_count": 0,
-            "skipped_count": 0
-        }
+dimstyle = setup_dimstyle(doc)
 
-    perp_count = 0
-    bylayer_count = 0
-    hidden_count = 0
+beams = extract_beams(msp)
+print(f"\nDetected {len(beams)} target beam segments on layer '{TARGET_LAYER}'")
 
-    for beam_idx, (p1, p2) in enumerate(beams):
-        mx, my = get_beam_center(p1, p2)
-        is_horizontal = is_horizontal_beam(p1, p2)
-        beam_length = length(p1, p2)
+if len(beams) == 0:
+    print("No beams found! Check layer name and linetype (DASH/HIDDEN).")
+    exit()
 
-        show_debug = beam_idx < 5
+perp_count = 0
+bylayer_count = 0
+hidden_count = 0
 
-        if beam_idx < 10 or beam_idx % 50 == 0:
-            print(f"\nBEAM {beam_idx} / {len(beams)}")
-            if show_debug:
-                print(f"   Center: ({mx:.1f}, {my:.1f}), "
-                      f"Length: {beam_length:.1f}mm, "
-                      f"Horizontal: {is_horizontal}")
+for beam_idx, (p1, p2) in enumerate(beams):
+    mx, my = get_beam_center(p1, p2)
+    is_horizontal = is_horizontal_beam(p1, p2)
+    beam_length = length(p1, p2)
 
-        wall_hits = collect_nearest_behind_hits(
-            p1, p2, msp,
-            line_filter=lambda lt: lt in ["BYLAYER", "CONTINUOUS"],
-            min_distance=BEHIND_MIN_DISTANCE,
-            max_distance=BEHIND_MAX_DISTANCE,
-            use_size_filter=False,
-            layer_filter=lambda layer: layer.upper().replace("_", " ") == TARGET_LAYER.upper().replace("_", " "),
-            label="WALL",
-            debug=show_debug,
-        )
+    show_debug = beam_idx < 5
 
-        walls_generated = 0
-        if wall_hits:
-            walls_generated = generate_perpendiculars_from_behind_hits(
-                p1, p2, beams, beam_idx, msp,
-                wall_hits, color=6, debug=show_debug, label="WALL"
-            )
-            if walls_generated > 0:
-                perp_count += walls_generated
-                bylayer_count += 1
-                if show_debug:
-                    print(f"   Generated {walls_generated} perpendicular(s) from WALLS")
+    if beam_idx < 10 or beam_idx % 50 == 0:
+        print(f"\nBEAM {beam_idx} / {len(beams)}")
+        if show_debug:
+            print(f"   Center: ({mx:.1f}, {my:.1f}), "
+                  f"Length: {beam_length:.1f}mm, "
+                  f"Horizontal: {is_horizontal}")
 
-        hidden_hits = collect_nearest_behind_hits(
-            p1, p2, msp,
-            line_filter=lambda lt: "HIDDEN" in lt or "DASH" in lt,
-            min_distance=BEHIND_MIN_DISTANCE,
-            max_distance=BEHIND_MAX_DISTANCE,
-            use_size_filter=False,
-            label="HIDDEN",
-            debug=show_debug,
-        )
-
-        if hidden_hits:
-            hidden_generated = generate_hidden_perpendiculars_like_find_hidden(
-                p1, p2, beams, beam_idx, msp,
-                nearest_hits=hidden_hits,
-                debug=show_debug,
-            )
-            if hidden_generated > 0:
-                perp_count += hidden_generated
-                hidden_count += 1
-                if show_debug:
-                    print(f"   Generated {hidden_generated} perpendicular(s) from HIDDEN lines")
-        else:
-            if show_debug:
-                print(f"   No hidden lines found — trying legacy find_hidden_and_generate")
-            legacy_generated = find_hidden_and_generate(p1, p2, beams, beam_idx, msp)
-            if legacy_generated > 0:
-                perp_count += legacy_generated
-                hidden_count += 1
-
-    skipped = len(beams) - bylayer_count - hidden_count
-    
-    print(f"\n{'='*60}")
-    print(f"FINAL SUMMARY")
-    print(f"{'='*60}")
-    print(f"  Total beams processed:          {len(beams)}")
-    print(f"  Total perpendiculars generated: {perp_count}")
-    print(f"  From BYLAYER walls:             {bylayer_count} beams")
-    print(f"  From HIDDEN lines:              {hidden_count} beams")
-    print(f"  Skipped (no hits):              {skipped} beams")
-    print(f"{'='*60}")
-    print("\nDONE!")
-    
-    return doc, {
-        "total_beams": len(beams),
-        "total_perps": perp_count,
-        "bylayer_count": bylayer_count,
-        "hidden_count": hidden_count,
-        "skipped_count": skipped
-    }
-
-if __name__ == "__main__":
-    import tkinter as tk
-    from tkinter import filedialog
-
-    root = tk.Tk()
-    root.withdraw()
-
-    input_path = filedialog.askopenfilename(
-        title="Select Input DXF File",
-        filetypes=[("DXF Files", "*.dxf")]
+    wall_hits = collect_nearest_behind_hits(
+        p1, p2, msp,
+        line_filter=lambda lt: lt in ["BYLAYER", "CONTINUOUS"],
+        min_distance=BEHIND_MIN_DISTANCE,
+        max_distance=BEHIND_MAX_DISTANCE,
+        use_size_filter=False,
+        layer_filter=lambda layer: layer.upper().replace("_", " ") == TARGET_LAYER.upper().replace("_", " "),
+        label="WALL",
+        debug=show_debug,
     )
-    if not input_path:
-        print("No file selected. Exiting.")
-        exit()
 
-    base_name = os.path.splitext(input_path)[0]
-    output_path = base_name + "_output.dxf"
+    walls_generated = 0
+    if wall_hits:
+        walls_generated = generate_perpendiculars_from_behind_hits(
+            p1, p2, beams, beam_idx, msp,
+            wall_hits, color=6, debug=show_debug, label="WALL"
+        )
+        if walls_generated > 0:
+            perp_count += walls_generated
+            bylayer_count += 1
+            if show_debug:
+                print(f"   Generated {walls_generated} perpendicular(s) from WALLS")
 
-    print("=" * 60)
-    print("DXF BEAM PERPENDICULAR GENERATOR (CLI)")
-    print("=" * 60)
-    print(f"Input file:  {input_path}")
-    print(f"Output file: {output_path}")
-    print("=" * 60)
+    hidden_hits = collect_nearest_behind_hits(
+        p1, p2, msp,
+        line_filter=lambda lt: "HIDDEN" in lt or "DASH" in lt,
+        min_distance=BEHIND_MIN_DISTANCE,
+        max_distance=BEHIND_MAX_DISTANCE,
+        use_size_filter=False,
+        label="HIDDEN",
+        debug=show_debug,
+    )
 
-    try:
-        doc = safe_read_dxf(input_path)
-    except Exception as e:
-        print(f"Failed to read DXF file: {e}")
-        exit()
+    if hidden_hits:
+        hidden_generated = generate_hidden_perpendiculars_like_find_hidden(
+            p1, p2, beams, beam_idx, msp,
+            nearest_hits=hidden_hits,
+            debug=show_debug,
+        )
+        if hidden_generated > 0:
+            perp_count += hidden_generated
+            hidden_count += 1
+            if show_debug:
+                print(f"   Generated {hidden_generated} perpendicular(s) from HIDDEN lines")
+    else:
+        if show_debug:
+            print(f"   No hidden lines found â€” trying legacy find_hidden_and_generate")
+        legacy_generated = find_hidden_and_generate(p1, p2, beams, beam_idx, msp)
+        if legacy_generated > 0:
+            perp_count += legacy_generated
+            hidden_count += 1
 
-    fix_linetypes(doc)
-    processed_doc, stats = run_dxf_processing(doc, {})
-    processed_doc.saveas(output_path)
-    print(f"\nDONE! Saved to: {output_path}")
+doc.saveas(output_path)
+
+print(f"\n{'='*60}")
+print(f"FINAL SUMMARY")
+print(f"{'='*60}")
+print(f"  Total beams processed:          {len(beams)}")
+print(f"  Total perpendiculars generated: {perp_count}")
+print(f"  From BYLAYER walls:             {bylayer_count} beams")
+print(f"  From HIDDEN lines:              {hidden_count} beams")
+print(f"  Skipped (no hits):              {len(beams) - bylayer_count - hidden_count} beams")
+print(f"{'='*60}")
+print(f"\nDONE! Saved to: {output_path}")
 
 
