@@ -26,7 +26,7 @@ def update_globals(params):
     _spacing_text_drawn.clear()
 
 
-TARGET_LAYER = "RCC_BEMS"
+TARGET_LAYER = "RCC_BEAMS"
 GENERATED_LAYER = "GENERATED_PERP_LINES"
 BEHIND_MIN_DISTANCE = 10
 BEHIND_MAX_DISTANCE = 450
